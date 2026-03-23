@@ -1,0 +1,80 @@
+name: basicinfrapipeline
+trigger:
+- master
+
+pool: infrapool
+stages: 
+
+#------------------Terraform install and init ---------------#
+
+- stage: terraforminstall
+  displayName: terraform initalizing
+  jobs: 
+  - job: terraform_install
+    steps: 
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
+    job: terraform_init
+    steps: 
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: 'akansha'
+        backendAzureRmOverrideSubscriptionID: '03817a80-26ba-454c-abd9-ecfc35cb5cc5'
+        backendAzureRmResourceGroupName: 'mohit_rg'
+        backendAzureRmStorageAccountName: 'mystorage5512'
+        backendAzureRmContainerName: 'mohit-conatiner'
+        backendAzureRmKey: 'key.tfstate'
+#--------------terraform validate and fmt ------------------#
+
+- stage: validate
+  displayName: terraform validating
+  dependsOn:  terraforminstall
+  jobs:
+  - job: terraform_vaidate
+    steps: 
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+
+#--------------terrafrom plan ------------- #
+- stage: terraform_plan
+  dependsOn: validate 
+  jobs:
+  - job: plan
+    steps: 
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        environmentServiceNameAzureRM: 'akansha'
+        environmentAzureRmOverrideSubscriptionID: '03817a80-26ba-454c-abd9-ecfc35cb5cc5'
+
+#--------- manual approval --------#
+- stage: manual_approval
+  displayName: getting approval
+  dependsOn: terraform_plan
+  jobs:
+  - job: approval
+    steps: 
+    - task: ManualValidation@1
+      inputs:
+        notifyUsers: 'aksverma2701@gmail.com'
+        approvers: 'manager'
+
+#----------terraform apply ---------#
+- stage: apply
+  displayName: terraform apply
+  dependsOn: manual_approval
+  jobs:
+  - job:
+    steps:
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        environmentServiceNameAzureRM: 'akansha'
+        environmentAzureRmOverrideSubscriptionID: '03817a80-26ba-454c-abd9-ecfc35cb5cc5'
