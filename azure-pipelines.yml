@@ -2,7 +2,7 @@ name: basicinfrapipeline
 trigger:
 - master
 
-pool: infrapool
+pool: infra pool
 stages: 
 
 #------------------Terraform install and init ---------------#
@@ -15,7 +15,7 @@ stages:
     - task: TerraformInstaller@1
       inputs:
         terraformVersion: 'latest'
-    job: terraform_init
+  - job: terraform_init
     steps: 
     - task: TerraformTask@5
       inputs:
@@ -53,22 +53,11 @@ stages:
         environmentServiceNameAzureRM: 'akansha'
         environmentAzureRmOverrideSubscriptionID: '03817a80-26ba-454c-abd9-ecfc35cb5cc5'
 
-#--------- manual approval --------#
-- stage: manual_approval
-  displayName: getting approval
-  dependsOn: terraform_plan
-  jobs:
-  - job: approval
-    steps: 
-    - task: ManualValidation@1
-      inputs:
-        notifyUsers: 'aksverma2701@gmail.com'
-        approvers: 'manager'
 
 #----------terraform apply ---------#
 - stage: apply
   displayName: terraform apply
-  dependsOn: manual_approval
+  dependsOn: terraform_plan
   jobs:
   - job:
     steps:
